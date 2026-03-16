@@ -160,15 +160,19 @@ Recomendado: rodar com headless=False para visualizar a execução.
 
 Estrutura de Pastas
 rpa-bcb-challenge/
+
 ├─ assets/                   # Arquivos para upload
 │  └─ documento_teste.pdf
+
 ├─ outputs/                  # Resultados gerados
 │  ├─ text_box_result.json
 │  ├─ webtables_extract.csv
 │  ├─ webtables_summary.json
 │  └─ upload_result.json
+
 ├─ rpa_challenge.py          # Script principal
 └─ requirements.txt
+
 Execução
 
 Ative seu ambiente virtual e execute:
