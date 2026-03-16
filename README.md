@@ -173,7 +173,7 @@ rpa-bcb-challenge/
 ├─ rpa_challenge.py          # Script principal
 └─ requirements.txt
 
-Execução
+**Execução**
 
 Ative seu ambiente virtual e execute:
 
