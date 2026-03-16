@@ -1,0 +1,7 @@
+streamlit
+pandas
+requests
+streamlit
+playwright
+scikit-learn
+altair
