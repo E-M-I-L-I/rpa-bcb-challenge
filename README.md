@@ -1,319 +1,141 @@
+Dashboard Financeiro & RPA Challenge – DemoQA Automation
+
+Este repositório contém dois projetos distintos desenvolvidos em Python:
+
+Dashboard Financeiro – Monitoramento Macroeconômico
+Painel interativo desenvolvido com Python + Streamlit para análise de indicadores econômicos no Brasil, integrando dados do Banco Central do Brasil e Boletim Focus.
+
+RPA Challenge – Automação DemoQA
+Automação de testes e extração de dados do site DemoQA
+, com geração de outputs em CSV e JSON.
+
+Parte 1 – Dashboard Financeiro
+🎯 Objetivo
+
+Monitorar indicadores macroeconômicos relevantes
+
+Visualizar expectativas de mercado
+
+Apoiar análise executiva e tomada de decisão
+
+📊 Indicadores Monitorados
+Indicador	Descrição
+SELIC	Taxa básica de juros da economia brasileira
+USD/BRL	Taxa de câmbio Real/Dólar
+IPCA	Índice oficial de inflação do Brasil
+📈 Estrutura do Dashboard
+Página Executiva
+
+KPIs principais: SELIC, USD/BRL, Retorno do dólar (7 e 30 dias), Volatilidade, IPCA acumulado
+
+Análises adicionais: correlação móvel USD x SELIC, alerta de percentil 90 do histórico, curva de expectativas do mercado (Boletim Focus)
+
+Página de Detalhamento
+
+Série histórica de SELIC, USD/BRL e IPCA
+
+Variações do dólar (M/M e Y/Y)
+
+Visualização de dados brutos filtrados por período
+
+🗂 Arquivos do Painel e Camada de Dados
+
+Arquivo do painel: dashboard.py (Streamlit)
+Instruções de abertura/uso:
+
 pip install -r requirements.txt
-python -m streamlit run dashboard/app.py
+streamlit run dashboard.py
 
-# RPA & Financial Dashboard Challenge
+Abrirá o dashboard no navegador.
 
-![Dashboard Demo](docs/dashboard_demo.gif)
+Camada de dados: Scripts Python que capturam dados do Banco Central (API SGS) e do Boletim Focus (API Olinda).
 
-# RPA & Financial Dashboard Challenge
+data_fetch_bcb.py – captura séries históricas SELIC, USD/BRL e IPCA
 
-Desafio técnico desenvolvido para avaliação da vaga de **Desenvolvedor RPA**.
+data_fetch_focus.py – captura expectativas de mercado
 
-O projeto possui duas partes principais:
+Estes scripts podem ser executados para atualizar os dados periodicamente.
 
-1. **Painel financeiro com dados do Banco Central**
-2. **Automação RPA simulando interação de usuário no navegador**
+Dados utilizados: séries históricas do Banco Central e previsões do Boletim Focus, armazenadas localmente em .csv temporários ou diretamente processadas pelo painel.
 
-O objetivo é demonstrar habilidades em:
+Parte 2 – RPA Challenge – DemoQA Automation
+Descrição
 
-* consumo de APIs
-* transformação de dados
-* análise de indicadores econômicos
-* construção de dashboards
-* automação de processos via navegador
+Automação de quatro cenários no site DemoQA:
 
----
+Text Box: Preenche campos de texto e salva resultados em JSON.
 
-# Estrutura do Projeto
+Check Box: Seleciona checkboxes, expande árvore e registra resultado.
 
-```
-rpa-bcb-challenge
-│
-├── dashboard
-│   └── app.py                # Dashboard Streamlit
-│
-├── rpa
-│   └── demoqa_bot.py        # Automação DemoQA
-│
-├── outputs                  # Outputs gerados pela automação
-│
-├── assets
-│   └── documento_teste.pdf  # Arquivo utilizado no upload
-│
-├── requirements.txt
-└── README.md
-```
+Web Tables: Extrai dados de tabelas HTML, salva CSV e gera resumo JSON.
 
----
+Upload de arquivo: Faz upload de arquivo local e salva nome do arquivo enviado em JSON.
 
-# Parte 1 — Painel Econômico (Banco Central)
+Pré-requisitos
 
-O painel consome dados diretamente da API pública do Banco Central (BCData / SGS).
+Python 3.9+
 
-Fonte oficial:
+Virtualenv ou venv
 
-* SELIC (série 11)
-* USD/BRL (série 1)
-* IPCA (série 433)
+Dependências:
 
-Dados obtidos via API:
-
-https://api.bcb.gov.br/dados/serie/bcdata.sgs
-
-A atualização dos dados ocorre automaticamente sempre que o dashboard é executado.
-
----
-
-# Janela Temporal
-
-Foi utilizada uma janela mínima de **2022 até o presente**, garantindo mais de **24 meses de histórico**, conforme solicitado no desafio.
-
----
-
-# KPIs Implementados
-
-Os seguintes indicadores foram calculados:
-
-### SELIC
-
-* SELIC atual (último valor disponível)
-* variação da SELIC nos últimos 30 dias
-
-### USD/BRL
-
-* valor atual
-* retorno percentual em 7 dias
-* retorno percentual em 30 dias
-
-### Volatilidade Cambial
-
-* volatilidade de 30 dias baseada em retornos diários
-
-### Inflação
-
-* IPCA acumulado em 12 meses (derivado da variação mensal)
-
----
-
-# Análises Adicionais
-
-Foram incluídas análises exploratórias e insights automáticos.
-
-### 1 — Alerta de pressão cambial
-
-O sistema calcula o **percentil 90 do histórico do USD/BRL**.
-
-Caso o valor atual esteja acima desse limite, o dashboard gera um alerta indicando possível pressão cambial.
-
----
-
-### 2 — Correlação entre USD e SELIC
-
-Foi calculada a correlação histórica entre as séries:
-
-* USD/BRL
-* SELIC
-
-Essa análise permite observar possíveis relações entre política monetária e câmbio.
-
----
-
-### 3 — Volatilidade móvel
-
-Foi implementado um cálculo de **volatilidade rolling de 30 dias**, permitindo identificar períodos de maior instabilidade no câmbio.
-
----
-
-# Estrutura do Painel
-
-O dashboard foi dividido em duas páginas:
-
-### Página Executiva
-
-Foco em leitura rápida para gestores:
-
-* principais KPIs
-* tendências recentes
-* insights automáticos
-
-### Página de Detalhamento
-
-Permite exploração dos dados:
-
-* séries históricas completas
-* gráficos de tendência
-* tabela de dados
-
----
-
-# Filtros
-
-O painel possui filtros de período:
-
-* 30 dias
-* 90 dias
-* 180 dias
-* histórico completo
-
-Isso permite análises rápidas de curto e médio prazo.
-
----
-
-# Como Executar o Dashboard
-
-1 — criar ambiente virtual
-
-```
-python -m venv venv
-```
-
-2 — ativar ambiente
-
-Windows:
-
-```
-venv\Scripts\activate
-```
-
-3 — instalar dependências
-
-```
 pip install -r requirements.txt
-```
 
-4 — executar o dashboard
+Recomendado: rodar com headless=False para visualizar a execução.
 
-```
-python -m streamlit run dashboard/app.py
-```
+Estrutura de Pastas
+rpa-bcb-challenge/
+├─ assets/                   # Arquivos para upload
+│  └─ documento_teste.pdf
+├─ outputs/                  # Resultados gerados
+│  ├─ text_box_result.json
+│  ├─ webtables_extract.csv
+│  ├─ webtables_summary.json
+│  └─ upload_result.json
+├─ rpa_challenge.py          # Script principal
+└─ requirements.txt
+Execução
 
-O painel abrirá automaticamente no navegador.
+Ative seu ambiente virtual e execute:
 
----
+python rpa_challenge.py
 
-# Parte 2 — Automação RPA
+Após a execução, os resultados estarão na pasta outputs/.
 
-A segunda parte do desafio consiste em uma automação de navegador utilizando o site de testes:
+Pontos de melhoria para versões futuras
 
-https://demoqa.com
+Painel Dashboard:
 
-A automação simula ações de usuário como:
+Aplicar brandbook da marca (cores, fontes, ícones personalizados)
 
-* preenchimento de formulário
-* seleção de checkboxes
-* extração de dados de tabela
-* upload de arquivo
+Ajustar linguagens e termos de acordo com áreas de foco
 
----
+Ajustes de fluidez e agilidade na interface
 
-# Cenários Implementados
+Possibilidade de envio automático de resumos de dados (diário, semanal ou mensal)
 
-### Text Box
+RPA Challenge:
 
-* preenchimento de formulário
-* submissão
-* extração do resultado exibido na página
+Melhorar fluidez e velocidade da automação
 
-Output:
+Reduzir tempo de execução de ponta a ponta
 
-```
-outputs/text_box_result.json
-```
+Horas de Trabalho
+Dia	Horário	Atividades
+Quinta-feira	9h às 16h	Construção do painel e conexão com APIs
+Sexta-feira	8h às 18h	Construção do RPA (automação de cenários)
+Segunda-feira	7h às 12:45	Revisão de dados, certificação de resultados, testes, limpeza de arquivos e ajustes finais
 
----
+Observações sobre o tempo:
 
-### Check Box
+A maior parte do tempo foi dedicada a garantir que os dados fossem capturados corretamente e à validação dos outputs do RPA.
 
-* expansão da árvore
-* seleção dos itens:
+Ajustes de interface e branding são planejados para versões futuras.
 
-```
-Commands
-General
-```
+Observações Gerais
 
----
+Bloqueio automático de anúncios e iframes no RPA para evitar interferência.
 
-### Web Tables
+Outputs (CSV e JSON) são gerados apenas se os dados estiverem disponíveis.
 
-Extração dos dados da tabela:
-
-Campos:
-
-* First Name
-* Last Name
-* Age
-* Email
-* Salary
-* Department
-
-Outputs gerados:
-
-```
-outputs/webtables_extract.csv
-outputs/webtables_summary.json
-```
-
-Resumo inclui:
-
-* total de registros
-* média salarial
-* registros por departamento
-
----
-
-### Upload
-
-Realiza upload de um arquivo localizado em:
-
-```
-assets/documento_teste.pdf
-```
-
-Valida o nome do arquivo na interface.
-
-Output:
-
-```
-outputs/upload_result.json
-```
-
----
-
-# Evidências
-
-Foi gravado um vídeo demonstrando:
-
-* execução ponta a ponta
-* geração dos outputs
-* funcionamento do dashboard
-
-Duração: 2–5 minutos.
-
----
-
-# Tecnologias Utilizadas
-
-* Python
-* Streamlit
-* Pandas
-* Requests
-* Playwright (automação)
-
----
-
-# Considerações Finais
-
-O projeto foi estruturado com foco em:
-
-* **reprodutibilidade**
-* **clareza analítica**
-* **automação end-to-end**
-* **organização de código**
-
-A solução permite atualização automática dos dados e execução das automações com um único comando.
-
----
-
-OBS PARA AJUSTAR:
-Plotly para garantir a integridade da escala temporal, impedindo que usuários internos visualizem períodos fora do escopo da análise contábil.
+Para adicionar novos cenários na automação, utilize a mesma abordagem page.evaluate ou page.locator.
