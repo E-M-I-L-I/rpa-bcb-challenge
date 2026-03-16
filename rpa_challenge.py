@@ -9,11 +9,22 @@ os.makedirs("outputs", exist_ok=True)
 def run_challenge():
     with sync_playwright() as p:
         print("[LOG] - Iniciando navegador...")
-        browser = p.chromium.launch(headless=False, slow_mo=250, args=["--start-maximized"])
-        context = browser.new_context(no_viewport=True)
+        browser = p.chromium.launch(headless=False, slow_mo=200)
+        context = browser.new_context()
+
+        # Bloquear requests de anúncios e scripts extras
+        context.route(
+            "**/*",
+            lambda route: route.abort() 
+            if any(x in route.request.url for x in ["doubleclick", "ads", "adservice", "googlesyndication"])
+            else route.continue_()
+        )
+
         page = context.new_page()
 
-        # --- CENÁRIO 1: TEXT BOX ---
+        # -------------------------
+        # CENÁRIO 1: TEXT BOX
+        # -------------------------
         print("[LOG] - Executando Cenário 1: Text Box")
         page.goto("https://demoqa.com/text-box")
         page.fill("#userName", "Emilio RPA Developer")
@@ -26,74 +37,109 @@ def run_challenge():
             json.dump({"resultado_exibido": result_text}, f, indent=4, ensure_ascii=False)
         print("[OK] - Cenário 1 salvo.")
 
-        # --- CENÁRIO 2: CHECK BOX ---
+        # -------------------------
+        # CENÁRIO 2: CHECK BOX
+        # -------------------------
+        print("[LOG] - Executando Cenário 2: Check Box")
         page.goto("https://demoqa.com/checkbox")
-        page.wait_for_load_state("domcontentloaded")
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(1000)
 
-        # Remover banners
+        # Remover banners e iframes que sobrepõem elementos
+        page.evaluate("document.querySelectorAll('iframe, #fixedban').forEach(el => el.remove());")
+        page.wait_for_timeout(500)
+
+        # Expandir Home via botão "+"
         page.evaluate("""
-        document.querySelectorAll('#fixedban, iframe, footer').forEach(el => el.remove());
+            const homeToggle = document.querySelector("#tree-node-home button");
+            if(homeToggle) { homeToggle.click(); }
         """)
         page.wait_for_timeout(500)
 
-        # Esperar o container principal da árvore
-        tree_container = page.locator(".check-box-tree-wrapper")
-        tree_container.wait_for(state="visible", timeout=60000)
-
-        # Scroll até o nó Home
-        home_label = page.locator("label", has_text="Home")
-        home_label.scroll_into_view_if_needed()
+        # Selecionar checkbox Home
+        page.evaluate("""
+            const homeBox = document.querySelector("label[for='tree-node-home']");
+            if(homeBox) { homeBox.click(); }
+        """)
         page.wait_for_timeout(500)
 
-        # Clique forçado (ignora se algo está sobreposto)
-        home_label.click(force=True)
+        # Selecionar Commands e General
+        page.evaluate("""
+            const commandsBox = document.querySelector("label[for='tree-node-commands']");
+            if(commandsBox) { commandsBox.click(); }
+            const generalBox = document.querySelector("label[for='tree-node-general']");
+            if(generalBox) { generalBox.click(); }
+        """)
         page.wait_for_timeout(500)
 
-        # Validar resultado
-        result_text = page.locator("#result").inner_text()
-        print("[OK] Checkbox 'Home' marcado:", result_text)
+        # Capturar resultado final via JS
+        result = page.evaluate("() => document.querySelector('#result')?.innerText || ''")
+        print("[OK] Seleção realizada:")
+        print(result)
+        # -------------------------
         # --- CENÁRIO 3: WEB TABLES ---
+
         print("[LOG] - Executando Cenário 3: Web Tables")
+
         page.goto("https://demoqa.com/webtables")
-        page.evaluate("document.querySelectorAll('#fixedban, iframe, footer').forEach(el => el.remove());")
-        rows = page.locator(".rt-tr-group")
-        data = []
-        for i in range(rows.count()):
-            cells = rows.nth(i).locator(".rt-td").all_inner_texts()
-            if cells and cells[0].strip():
-                data.append({
-                    "First Name": cells[0],
-                    "Last Name": cells[1],
-                    "Age": cells[2],
-                    "Email": cells[3],
-                    "Salary": cells[4],
-                    "Department": cells[5]
-                })
+
+        # remover banners, iframes, rodapé
+        page.evaluate("""
+            document.querySelectorAll('#fixedban, iframe, footer').forEach(el => el.remove());
+        """)
+        page.wait_for_timeout(1500)  # aguardar renderização
+
+        # Capturar todas as linhas do tbody
+        data = page.evaluate("""
+        () => {
+            const rows = Array.from(document.querySelectorAll('.web-tables-wrapper table tbody tr'));
+            return rows.map(row => {
+                const cells = row.querySelectorAll('td');
+                if(cells.length < 6) return null; // ignorar linhas vazias
+                return {
+                    'First Name': cells[0]?.innerText.trim() || '',
+                    'Last Name': cells[1]?.innerText.trim() || '',
+                    'Age': parseInt(cells[2]?.innerText.trim()) || 0,
+                    'Email': cells[3]?.innerText.trim() || '',
+                    'Salary': parseInt(cells[4]?.innerText.replace(/[^0-9]/g,'')) || 0,
+                    'Department': cells[5]?.innerText.trim() || ''
+                };
+            }).filter(r => r !== null);
+        }
+        """)
+
+        # criar DataFrame
         df = pd.DataFrame(data)
+
+        # salvar CSV
         df.to_csv("outputs/webtables_extract.csv", index=False, encoding="utf-8")
-        df["Salary"] = pd.to_numeric(df["Salary"])
+
+        # resumo
         summary = {
             "total_registros": len(df),
-            "media_salary": round(df["Salary"].mean(), 2),
-            "registros_por_department": df["Department"].value_counts().to_dict()
+            "media_salary": round(df["Salary"].mean(), 2) if not df.empty else 0,
+            "registros_por_department": df["Department"].value_counts().to_dict() if not df.empty else {}
         }
+
+        # salvar JSON
         with open("outputs/webtables_summary.json", "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=4, ensure_ascii=False)
-        print("[OK] Cenário 3 salvo.")
 
-        # --- CENÁRIO 4: UPLOAD ---
+        print("[OK] Cenário 3 salvo.")
+        # CENÁRIO 4: UPLOAD
+        # -------------------------
         print("[LOG] - Executando Cenário 4: Upload de arquivo")
         page.goto("https://demoqa.com/upload-download")
         page.set_input_files("#uploadFile", "assets/documento_teste.pdf")
-        page.wait_for_timeout(1000)  # dar tempo para aparecer o nome
+        page.wait_for_timeout(1500)  # garantir que o nome apareça
         uploaded_name = page.locator("#uploadedFilePath").inner_text()
         upload_result = {"arquivo_enviado": uploaded_name}
         with open("outputs/upload_result.json", "w", encoding="utf-8") as f:
             json.dump(upload_result, f, indent=4, ensure_ascii=False)
         print("[OK] Cenário 4 salvo.")
 
-        # --- FINALIZAÇÃO ---
+        # -------------------------
+        # FINALIZAÇÃO
+        # -------------------------
         print("[LOG] - Automação concluída. Fechando navegador...")
         page.wait_for_timeout(2000)
         browser.close()
